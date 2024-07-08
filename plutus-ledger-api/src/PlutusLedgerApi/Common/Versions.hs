@@ -235,7 +235,7 @@ ledgerLanguageIntroducedIn = \case
   PlutusV1 -> alonzoPV
   PlutusV2 -> vasilPV
   PlutusV3 -> conwayPV
-  PlutusV4 -> conwayPV
+  PlutusV4 -> conwayPlus1PV
 
 {- | Which Plutus language versions are available in the given 'MajorProtocolVersion'?
 

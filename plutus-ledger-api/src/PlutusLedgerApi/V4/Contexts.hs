@@ -358,6 +358,7 @@ data ScriptPurpose
       -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
       ProposalProcedure
+  | Fulfills [TxInInfo]
   deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
   deriving (Pretty) via (PrettyShow ScriptPurpose)
 
@@ -375,6 +376,7 @@ data ScriptInfo
       -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
       ProposalProcedure
+  | FulfillsScript [TxInInfo]
   deriving stock (Generic, Haskell.Show, Haskell.Eq)
   deriving (Pretty) via (PrettyShow ScriptInfo)
 
@@ -383,7 +385,7 @@ data TxInInfo = TxInInfo
   { txInInfoOutRef   :: V3.TxOutRef
   , txInInfoResolved :: V2.TxOut
   }
-  deriving stock (Generic, Haskell.Show, Haskell.Eq)
+  deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
 
 instance PlutusTx.Eq TxInInfo where
   TxInInfo ref res == TxInInfo ref' res' =
@@ -681,6 +683,9 @@ PlutusTx.makeIsDataIndexed
 PlutusTx.makeLift ''ProposalProcedure
 PlutusTx.makeIsDataIndexed ''ProposalProcedure [('ProposalProcedure, 0)]
 
+PlutusTx.makeLift ''TxInInfo
+PlutusTx.makeIsDataIndexed ''TxInInfo [('TxInInfo, 0)]
+
 PlutusTx.makeLift ''ScriptPurpose
 PlutusTx.makeIsDataIndexed
   ''ScriptPurpose
@@ -690,6 +695,7 @@ PlutusTx.makeIsDataIndexed
   , ('Certifying, 3)
   , ('Voting, 4)
   , ('Proposing, 5)
+  , ('Fulfills, 6)
   ]
 
 PlutusTx.makeLift ''ScriptInfo
@@ -701,10 +707,8 @@ PlutusTx.makeIsDataIndexed
   , ('CertifyingScript, 3)
   , ('VotingScript, 4)
   , ('ProposingScript, 5)
+  , ('FulfillsScript, 6)
   ]
-
-PlutusTx.makeLift ''TxInInfo
-PlutusTx.makeIsDataIndexed ''TxInInfo [('TxInInfo, 0)]
 
 PlutusTx.makeLift ''TxInfo
 PlutusTx.makeIsDataIndexed ''TxInfo [('TxInfo, 0)]
