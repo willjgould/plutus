@@ -423,10 +423,7 @@ data TxInfo = TxInfo
   , txInfoProposalProcedures    :: [ProposalProcedure]
   , txInfoCurrentTreasuryAmount :: Haskell.Maybe V2.Lovelace
   , txInfoTreasuryDonation      :: Haskell.Maybe V2.Lovelace
-  , txInfoFulfills              :: [TxInInfo]
-  , txInfoRequests              :: [V2.TxOut]
-  , txInfoRequiredTxs           :: [TxInInfo]
-  , txBatchInfo                 :: [TxInfo]
+  , txInfoBatchInfo             :: [TxInfo]
   }
   deriving stock (Generic, Haskell.Show, Haskell.Eq)
 
@@ -449,9 +446,7 @@ instance Pretty TxInfo where
       , "Proposal Procedures:" <+> pretty txInfoProposalProcedures
       , "Current Treasury Amount:" <+> pretty txInfoCurrentTreasuryAmount
       , "Treasury Donation:" <+> pretty txInfoTreasuryDonation
-      , "Fulfills:" <+> pretty txInfoFulfills
-      , "Requests:" <+> pretty txInfoRequests
-      , "Requests Transactions:" <+> pretty txInfoRequiredTxs
+      , "Batch Info:" <+> pretty txInfoBatchInfo
       ]
 
 -- | The context that the currently-executing script can access.
