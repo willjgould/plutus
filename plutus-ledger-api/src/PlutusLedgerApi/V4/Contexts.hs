@@ -358,7 +358,10 @@ data ScriptPurpose
       -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
       ProposalProcedure
-  | Fulfills [TxInInfo]
+  | SpendOut
+      -- | 0-based index of the output
+      Haskell.Integer
+  | BatchObs V2.ScriptHash
   deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
   deriving (Pretty) via (PrettyShow ScriptPurpose)
 
@@ -376,7 +379,10 @@ data ScriptInfo
       -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
       ProposalProcedure
-  | FulfillsScript [TxInInfo]
+  | SpendOutScript
+      -- | 0-based index of the output
+      Haskell.Integer
+  | BatchObsScript V2.ScriptHash
   deriving stock (Generic, Haskell.Show, Haskell.Eq)
   deriving (Pretty) via (PrettyShow ScriptInfo)
 
@@ -695,7 +701,8 @@ PlutusTx.makeIsDataIndexed
   , ('Certifying, 3)
   , ('Voting, 4)
   , ('Proposing, 5)
-  , ('Fulfills, 6)
+  , ('SpendOut, 6)
+  , ('BatchObs, 7)
   ]
 
 PlutusTx.makeLift ''ScriptInfo
@@ -707,7 +714,8 @@ PlutusTx.makeIsDataIndexed
   , ('CertifyingScript, 3)
   , ('VotingScript, 4)
   , ('ProposingScript, 5)
-  , ('FulfillsScript, 6)
+  , ('SpendOutScript, 6)
+  , ('BatchObsScript, 7)
   ]
 
 PlutusTx.makeLift ''TxInfo
