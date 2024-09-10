@@ -426,6 +426,7 @@ data TxInfo = TxInfo
   , txInfoFulfills              :: [TxInInfo]
   , txInfoRequests              :: [V2.TxOut]
   , txInfoRequiredTxs           :: [TxInInfo]
+  , txBatchInfo                 :: [TxInfo]
   }
   deriving stock (Generic, Haskell.Show, Haskell.Eq)
 
