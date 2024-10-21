@@ -1,54 +1,56 @@
 -- editorconfig-checker-disable-file
 {-# LANGUAGE DeriveAnyClass    #-}
 {-# LANGUAGE DerivingVia       #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ViewPatterns      #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 {-# OPTIONS_GHC -fno-omit-interface-pragmas #-}
 {-# OPTIONS_GHC -fno-specialise #-}
 {-# OPTIONS_GHC -fno-strictness #-}
 
-module PlutusLedgerApi.V3.Contexts
-  ( ColdCommitteeCredential (..)
-  , HotCommitteeCredential (..)
-  , DRepCredential (..)
-  , DRep (..)
-  , Delegatee (..)
-  , TxCert (..)
-  , Voter (..)
-  , Vote (..)
-  , GovernanceActionId (..)
-  , Committee (..)
-  , Constitution (..)
-  , ProtocolVersion (..)
-  , ChangedParameters (..)
-  , GovernanceAction (..)
-  , ProposalProcedure (..)
-  , ScriptPurpose (..)
-  , ScriptInfo (..)
-  , TxInInfo (..)
-  , TxInfo (..)
-  , ScriptContext (..)
-  , findOwnInput
-  , findDatum
-  , findDatumHash
-  , findTxInByTxOutRef
-  , findContinuingOutputs
-  , getContinuingOutputs
-  , txSignedBy
+module PlutusLedgerApi.V3.Contexts (
+  ColdCommitteeCredential (..),
+  HotCommitteeCredential (..),
+  DRepCredential (..),
+  DRep (..),
+  Delegatee (..),
+  TxCert (..),
+  Voter (..),
+  Vote (..),
+  GovernanceActionId (..),
+  Committee (..),
+  Constitution (..),
+  ProtocolVersion (..),
+  ChangedParameters (..),
+  GovernanceAction (..),
+  ProposalProcedure (..),
+  ScriptPurpose (..),
+  ScriptInfo (..),
+  TxInInfo (..),
+  TxInfo (..),
+  ScriptContext (..),
+  findOwnInput,
+  findDatum,
+  findDatumHash,
+  findTxInByTxOutRef,
+  findContinuingOutputs,
+  getContinuingOutputs,
+  txSignedBy,
 
-    -- * Validator functions
-  , pubKeyOutputsAt
-  , valuePaidTo
-  , valueSpent
-  , valueProduced
-  , ownCurrencySymbol
-  , spendsOutput
-  ) where
+  -- * Validator functions
+  pubKeyOutputsAt,
+  valuePaidTo,
+  valueSpent,
+  valueProduced,
+  ownCurrencySymbol,
+  spendsOutput,
+) where
 
 import GHC.Generics (Generic)
 import Prettyprinter (nest, vsep, (<+>))
@@ -60,7 +62,6 @@ import PlutusTx qualified
 import PlutusTx.AssocMap hiding (filter, mapMaybe)
 import PlutusTx.Prelude qualified as PlutusTx
 import PlutusTx.Ratio (Rational)
-
 import Prelude qualified as Haskell
 
 newtype ColdCommitteeCredential = ColdCommitteeCredential V2.Credential
@@ -71,6 +72,7 @@ newtype ColdCommitteeCredential = ColdCommitteeCredential V2.Credential
     , Haskell.Ord
     , Haskell.Show
     , PlutusTx.Eq
+    , PlutusTx.Ord
     , PlutusTx.ToData
     , PlutusTx.FromData
     , PlutusTx.UnsafeFromData
@@ -149,10 +151,10 @@ data TxCert
     TxCertUnRegDRep DRepCredential V2.Lovelace
   | -- | A digest of the PoolParams
     TxCertPoolRegister
+      -- | poolId
       V2.PubKeyHash
-      -- ^ poolId
+      -- | pool VFR
       V2.PubKeyHash
-      -- ^ pool VFR
   | -- | The retirement certificate and the Epoch in which the retirement will take place
     TxCertPoolRetire V2.PubKeyHash Haskell.Integer
   | -- | Authorize a Hot credential for a specific Committee member's cold credential
@@ -303,21 +305,26 @@ newtype ChangedParameters = ChangedParameters {getChangedParameters :: PlutusTx.
     )
 
 data GovernanceAction
-  = ParameterChange
+  = -- | Hash of the constitution script
+    ParameterChange
       (Haskell.Maybe GovernanceActionId)
       ChangedParameters
-      (Haskell.Maybe V2.ScriptHash) -- ^ Hash of the constitution script
+      (Haskell.Maybe V2.ScriptHash)
   | -- | proposal to update protocol version
     HardForkInitiation (Haskell.Maybe GovernanceActionId) ProtocolVersion
-  | TreasuryWithdrawals
+  | -- | Hash of the constitution script
+    TreasuryWithdrawals
       (Map V2.Credential V2.Lovelace)
-      (Haskell.Maybe V2.ScriptHash) -- ^ Hash of the constitution script
+      (Haskell.Maybe V2.ScriptHash)
   | NoConfidence (Haskell.Maybe GovernanceActionId)
   | UpdateCommittee
       (Haskell.Maybe GovernanceActionId)
-      [ColdCommitteeCredential] -- ^ Committee members to be removed
-      (Map ColdCommitteeCredential Haskell.Integer) -- ^ Committee members to be added
-      Rational -- ^ New quorum
+      -- | Committee members to be removed
+      [ColdCommitteeCredential]
+      -- | Committee members to be added
+      (Map ColdCommitteeCredential Haskell.Integer)
+      -- | New quorum
+      Rational
   | NewConstitution (Haskell.Maybe GovernanceActionId) Constitution
   | InfoAction
   deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
@@ -345,16 +352,78 @@ data ScriptPurpose
   | Spending V3.TxOutRef
   | Rewarding V2.Credential
   | Certifying
+      -- | 0-based index of the given `TxCert` in `txInfoTxCerts`
       Haskell.Integer
-      -- ^ 0-based index of the given `TxCert` in `txInfoTxCerts`
       TxCert
   | Voting Voter
   | Proposing
+      -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
-      -- ^ 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       ProposalProcedure
   deriving stock (Generic, Haskell.Show, Haskell.Eq, Haskell.Ord)
   deriving (Pretty) via (PrettyShow ScriptPurpose)
+
+instance PlutusTx.Eq ProposalProcedure where
+  {-# INLINEABLE (==) #-}
+  ProposalProcedure dep ret gov == ProposalProcedure dep' ret' gov' = dep PlutusTx.== dep' PlutusTx.&& ret PlutusTx.== ret' PlutusTx.&& gov PlutusTx.== gov'
+
+-- | PlutusTx.Eq instance for GovernanceAction
+instance PlutusTx.Eq GovernanceAction where
+  {-# INLINEABLE (==) #-}
+  ParameterChange mid cp mHash == ParameterChange mid' cp' mHash' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& cp
+      PlutusTx.== cp'
+      PlutusTx.&& mHash
+      PlutusTx.== mHash'
+  HardForkInitiation mid pv == HardForkInitiation mid' pv' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& pv
+      PlutusTx.== pv'
+  TreasuryWithdrawals withdrawals mHash == TreasuryWithdrawals withdrawals' mHash' =
+    withdrawals
+      PlutusTx.== withdrawals'
+      PlutusTx.&& mHash
+      PlutusTx.== mHash'
+  NoConfidence mid == NoConfidence mid' =
+    mid PlutusTx.== mid'
+  UpdateCommittee mid remove add quorum == UpdateCommittee mid' remove' add' quorum' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& remove
+      PlutusTx.== remove'
+      PlutusTx.&& add
+      PlutusTx.== add'
+      PlutusTx.&& quorum
+      PlutusTx.== quorum'
+  NewConstitution mid cons == NewConstitution mid' cons' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& cons
+      PlutusTx.== cons'
+  InfoAction == InfoAction =
+    PlutusTx.True
+  _ == _ =
+    PlutusTx.False
+
+instance (PlutusTx.Ord k, PlutusTx.Eq v) => PlutusTx.Eq (Map k v) where
+  {-# INLINEABLE (==) #-}
+  (Map m1) == m'@(Map m2) =
+    if PlutusTx.length m1 PlutusTx.== PlutusTx.length m2
+      then PlutusTx.foldr (\(k, v) acc -> acc PlutusTx.&& (lookup k m' PlutusTx.== PlutusTx.Just v)) PlutusTx.True m1
+      else PlutusTx.False
+
+instance PlutusTx.Eq ScriptPurpose where
+  {-# INLINEABLE (==) #-}
+  Minting cs == Minting cs'                = cs PlutusTx.== cs'
+  Spending ref == Spending ref'            = ref PlutusTx.== ref'
+  Rewarding sc == Rewarding sc'            = sc PlutusTx.== sc'
+  Certifying i cert == Certifying i' cert' = i PlutusTx.== i' PlutusTx.&& cert PlutusTx.== cert'
+  Voting v == Voting v'                    = v PlutusTx.== v'
+  Proposing i pp == Proposing i' pp'       = i PlutusTx.== i' PlutusTx.&& pp PlutusTx.== pp'
+  _ == _                                   = PlutusTx.False
 
 -- | Like `ScriptPurpose` but with an optional datum for spending scripts.
 data ScriptInfo
@@ -362,13 +431,13 @@ data ScriptInfo
   | SpendingScript V3.TxOutRef (Haskell.Maybe V2.Datum)
   | RewardingScript V2.Credential
   | CertifyingScript
+      -- | 0-based index of the given `TxCert` in `txInfoTxCerts`
       Haskell.Integer
-      -- ^ 0-based index of the given `TxCert` in `txInfoTxCerts`
       TxCert
   | VotingScript Voter
   | ProposingScript
+      -- | 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       Haskell.Integer
-      -- ^ 0-based index of the given `ProposalProcedure` in `txInfoProposalProcedures`
       ProposalProcedure
   deriving stock (Generic, Haskell.Show, Haskell.Eq)
   deriving (Pretty) via (PrettyShow ScriptInfo)
@@ -482,8 +551,8 @@ hashes
 findDatumHash :: V2.Datum -> TxInfo -> Haskell.Maybe V2.DatumHash
 findDatumHash ds TxInfo{txInfoData} =
   PlutusTx.fst PlutusTx.<$> PlutusTx.find f (toList txInfoData)
-  where
-    f (_, ds') = ds' PlutusTx.== ds
+ where
+  f (_, ds') = ds' PlutusTx.== ds
 
 {-# INLINEABLE findTxInByTxOutRef #-}
 
@@ -510,8 +579,8 @@ findContinuingOutputs ctx
       PlutusTx.findIndices
         (f txOutAddress)
         (txInfoOutputs (scriptContextTxInfo ctx))
-  where
-    f addr V2.TxOut{txOutAddress = otherAddress} = addr PlutusTx.== otherAddress
+ where
+  f addr V2.TxOut{txOutAddress = otherAddress} = addr PlutusTx.== otherAddress
 findContinuingOutputs _ = PlutusTx.traceError "Le" -- "Can't find any continuing outputs"
 
 {-# INLINEABLE getContinuingOutputs #-}
@@ -524,8 +593,8 @@ getContinuingOutputs ctx
   | Haskell.Just TxInInfo{txInInfoResolved = V2.TxOut{txOutAddress}} <-
       findOwnInput ctx =
       PlutusTx.filter (f txOutAddress) (txInfoOutputs (scriptContextTxInfo ctx))
-  where
-    f addr V2.TxOut{txOutAddress = otherAddress} = addr PlutusTx.== otherAddress
+ where
+  f addr V2.TxOut{txOutAddress = otherAddress} = addr PlutusTx.== otherAddress
 getContinuingOutputs _ = PlutusTx.traceError "Lf" -- "Can't get any continuing outputs"
 
 {-# INLINEABLE txSignedBy #-}
@@ -584,8 +653,10 @@ spendsOutput :: TxInfo -> V3.TxId -> Haskell.Integer -> Haskell.Bool
 spendsOutput txInfo txId i =
   let spendsOutRef inp =
         let outRef = txInInfoOutRef inp
-         in txId PlutusTx.== V3.txOutRefId outRef
-              PlutusTx.&& i PlutusTx.== V3.txOutRefIdx outRef
+         in txId
+              PlutusTx.== V3.txOutRefId outRef
+              PlutusTx.&& i
+              PlutusTx.== V3.txOutRefIdx outRef
    in PlutusTx.any spendsOutRef (txInfoInputs txInfo)
 
 PlutusTx.makeLift ''ColdCommitteeCredential

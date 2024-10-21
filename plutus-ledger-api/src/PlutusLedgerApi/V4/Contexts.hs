@@ -7,6 +7,7 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE ViewPatterns      #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 {-# OPTIONS_GHC -fno-omit-interface-pragmas #-}
 {-# OPTIONS_GHC -fno-specialise #-}
@@ -71,6 +72,7 @@ newtype ColdCommitteeCredential = ColdCommitteeCredential V2.Credential
     , Haskell.Ord
     , Haskell.Show
     , PlutusTx.Eq
+    , PlutusTx.Ord
     , PlutusTx.ToData
     , PlutusTx.FromData
     , PlutusTx.UnsafeFromData
@@ -262,6 +264,67 @@ instance Pretty Constitution where
 instance PlutusTx.Eq Constitution where
   {-# INLINEABLE (==) #-}
   Constitution a == Constitution a' = a PlutusTx.== a'
+
+instance PlutusTx.Eq GovernanceAction where
+  {-# INLINEABLE (==) #-}
+  ParameterChange mid cp mHash == ParameterChange mid' cp' mHash' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& cp
+      PlutusTx.== cp'
+      PlutusTx.&& mHash
+      PlutusTx.== mHash'
+  HardForkInitiation mid pv == HardForkInitiation mid' pv' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& pv
+      PlutusTx.== pv'
+  TreasuryWithdrawals withdrawals mHash == TreasuryWithdrawals withdrawals' mHash' =
+    withdrawals
+      PlutusTx.== withdrawals'
+      PlutusTx.&& mHash
+      PlutusTx.== mHash'
+  NoConfidence mid == NoConfidence mid' =
+    mid PlutusTx.== mid'
+  UpdateCommittee mid remove add quorum == UpdateCommittee mid' remove' add' quorum' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& remove
+      PlutusTx.== remove'
+      PlutusTx.&& add
+      PlutusTx.== add'
+      PlutusTx.&& quorum
+      PlutusTx.== quorum'
+  NewConstitution mid cons == NewConstitution mid' cons' =
+    mid
+      PlutusTx.== mid'
+      PlutusTx.&& cons
+      PlutusTx.== cons'
+  InfoAction == InfoAction =
+    PlutusTx.True
+  _ == _ =
+    PlutusTx.False
+
+instance (PlutusTx.Ord k, PlutusTx.Eq v) => PlutusTx.Eq (Map k v) where
+  {-# INLINEABLE (==) #-}
+  (Map m1) == m'@(Map m2) =
+    if PlutusTx.length m1 PlutusTx.== PlutusTx.length m2
+      then PlutusTx.foldr (\(k, v) acc -> acc PlutusTx.&& (lookup k m' PlutusTx.== PlutusTx.Just v)) PlutusTx.True m1
+      else PlutusTx.False
+
+instance PlutusTx.Eq ProposalProcedure where
+  {-# INLINEABLE (==) #-}
+  ProposalProcedure dep ret gov == ProposalProcedure dep' ret' gov' = dep PlutusTx.== dep' PlutusTx.&& ret PlutusTx.== ret' PlutusTx.&& gov PlutusTx.== gov'
+
+instance PlutusTx.Eq ScriptPurpose where
+  {-# INLINEABLE (==) #-}
+  Minting cs == Minting cs'                = cs PlutusTx.== cs'
+  Spending ref == Spending ref'            = ref PlutusTx.== ref'
+  Rewarding sc == Rewarding sc'            = sc PlutusTx.== sc'
+  Certifying i cert == Certifying i' cert' = i PlutusTx.== i' PlutusTx.&& cert PlutusTx.== cert'
+  Voting v == Voting v'                    = v PlutusTx.== v'
+  Proposing i pp == Proposing i' pp'       = i PlutusTx.== i' PlutusTx.&& pp PlutusTx.== pp'
+  _ == _                                   = PlutusTx.False
 
 data ProtocolVersion = ProtocolVersion
   { pvMajor :: Haskell.Integer
