@@ -34,7 +34,7 @@ import PlutusPrelude
 import Data.Map qualified as Map
 import Data.Set qualified as Set
 import NoThunks.Class (NoThunks)
-import PlutusCore.Version (plcVersion100, plcVersion110)
+import PlutusCore.Version (plcVersion100, plcVersion110, plcVersion120)
 import Prettyprinter
 
 {- Note [New builtins/language versions and protocol versions]
@@ -227,6 +227,7 @@ plcVersionsIntroducedIn =
   Map.fromList
     [ ((PlutusV1, alonzoPV), Set.fromList [plcVersion100])
     , ((PlutusV3, conwayPV), Set.fromList [plcVersion110])
+    , ((PlutusV4, conwayPlus1PV), Set.fromList [plcVersion120])
     ]
 
 -- | Query the protocol version that a specific Plutus ledger language was first introduced in.
