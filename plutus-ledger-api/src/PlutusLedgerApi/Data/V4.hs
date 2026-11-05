@@ -260,6 +260,13 @@ module PlutusLedgerApi.Data.V4
   , Tx.txOutValue
   , Tx.txOutDatum
   , Tx.txOutReferenceScript
+  , Tx.txOutBacking
+  , Tx.MinUTxOBacking
+  , pattern Tx.Implicit
+  , pattern Tx.Explicit
+  , Tx.backingAmount
+  , Tx.applicationValue
+  , Tx.valueWithoutExplicitBacking
   , Tx.TxOutRef
   , pattern Tx.TxOutRef
   , Tx.txOutRefId
